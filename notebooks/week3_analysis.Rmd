@@ -1,0 +1,155 @@
+---
+title: "Week 3 - NAMB scRNA-seq Analysis"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+This notebook is the interactive version of `scripts/01_run_pipeline.R`.
+All paths and parameters come from `R/config.R`, so nothing here is machine-specific.
+Put the three 10X `.h5` files in `data/raw/` before running.
+
+# Load packages
+
+```{r packages}
+library(Seurat)
+library(dplyr)
+library(tidyverse)
+library(ggplot2)
+library(cowplot)
+library(hdf5r)
+library(here)
+
+source(here("R", "config.R"))
+source(here("R", "utils.R"))
+check_input_files(cfg)
+```
+
+# Load the female (batch 1), male (batch 2) and mixed (batch 3) datasets
+
+```{r load-data}
+# Each object is initialised from the raw (non-normalised) counts
+F_namb <- load_sample("female", cfg); F_namb
+M_namb <- load_sample("male",   cfg); M_namb
+Namb   <- load_sample("mixed",  cfg); Namb
+```
+
+# Merge all batches
+
+```{r merge}
+chatall <- merge(
+  F_namb,
+  y = list(M_namb, Namb),
+  add.cell.ids = cfg$cell_ids,
+  project = "Chat_namb"
+)
+chatall[["percent.mt"]] <- PercentageFeatureSet(chatall, pattern = cfg$mt_pattern)
+length(WhichCells(chatall))
+```
+
+# Quality control
+
+```{r qc-violin}
+VlnPlot(chatall,
+        features = c("nFeature_RNA", "nCount_RNA", "percent.mt"),
+        ncol = 3, pt.size = 0.001)
+```
+
+```{r qc-scatter}
+plot1 <- FeatureScatter(chatall, feature1 = "nCount_RNA", feature2 = "percent.mt")
+plot2 <- FeatureScatter(chatall, feature1 = "nCount_RNA", feature2 = "nFeature_RNA")
+plot1 + plot2
+```
+
+## Filter cells
+
+```{r filter}
+chatall <- subset(
+  chatall,
+  subset = nFeature_RNA > cfg$qc_min_features & percent.mt < cfg$qc_max_percent_mt
+)
+length(WhichCells(chatall))
+```
+
+# Normalise, find variable genes, scale
+
+```{r normalise}
+chatall <- NormalizeData(chatall)
+```
+
+```{r variable-features}
+chatall <- FindVariableFeatures(chatall, selection.method = "vst",
+                                nfeatures = cfg$n_variable_features)
+
+# 10 most highly variable genes
+top10 <- head(VariableFeatures(chatall), 10)
+top10
+
+plot1 <- VariableFeaturePlot(chatall)
+LabelPoints(plot = plot1, points = top10, repel = TRUE)
+```
+
+```{r scale}
+all.genes <- rownames(chatall)
+chatall <- ScaleData(chatall, features = all.genes)
+length(WhichCells(chatall))
+```
+
+# PCA
+
+```{r pca}
+chatall <- RunPCA(chatall, features = VariableFeatures(object = chatall))
+print(chatall[["pca"]], dims = 1:5, nfeatures = 5)
+```
+
+```{r pca-plots}
+VizDimLoadings(chatall, dims = 1:2, reduction = "pca")
+DimPlot(chatall, reduction = "pca")
+DimHeatmap(chatall, dims = 1, cells = 500, balanced = TRUE)
+DimHeatmap(chatall, dims = 1:12, cells = 500, balanced = TRUE)
+```
+
+## Dimensionality of the data
+
+```{r elbow}
+ElbowPlot(chatall)
+```
+
+# Clustering
+
+```{r clustering}
+x <- cfg$n_pcs
+chatall <- FindNeighbors(chatall, dims = 1:x)
+chatall <- FindClusters(chatall, resolution = cfg$cluster_resolution)
+head(Idents(chatall), 5)
+length(WhichCells(chatall))
+chatall <- RunUMAP(chatall, dims = 1:x)
+```
+
+## Reorder clusters by relatedness
+
+```{r cluster-tree}
+chatall <- BuildClusterTree(chatall, reorder = TRUE, reorder.numeric = TRUE)
+PlotClusterTree(chatall)
+```
+
+# Visualise the clusters
+
+```{r umap}
+DimPlot(chatall, reduction = "umap", label = TRUE)
+DimPlot(chatall, reduction = "umap", label = TRUE, split.by = "orig.ident")
+DimPlot(chatall, reduction = "umap", label = TRUE, group.by = "orig.ident")
+length(WhichCells(chatall))
+```
+
+# Session info
+
+```{r session-info}
+sessionInfo()
+```

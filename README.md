@@ -2,6 +2,7 @@
 
 A reproducible single-cell RNA-seq workflow in R (Seurat) that loads three 10X Genomics datasets (**female**, **male**, **mixed**), merges them, performs quality control, and produces clusters and UMAP visualisations.
 
+This repository is the Week 3 analysis, converted from an R Markdown notebook and a cleaned R script into a structured project.
 
 ## What the pipeline does
 
@@ -31,7 +32,7 @@ namb-scrnaseq-seurat-pipeline/
 │   ├── 00_install_packages.R   # one-time package installation
 │   └── 01_run_pipeline.R       # full analysis as a script
 ├── notebooks/
-│   └── analysis.Rmd      # same analysis as an R Markdown notebook
+│   └── week3_analysis.Rmd      # same analysis as an R Markdown notebook
 ├── data/
 │   ├── README.md               # which input files to provide
 │   └── raw/                    # put your .h5 files here (not tracked by git)
