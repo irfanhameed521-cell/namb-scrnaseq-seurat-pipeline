@@ -2,7 +2,6 @@
 
 A reproducible single-cell RNA-seq workflow in R (Seurat) that loads three 10X Genomics datasets (**female**, **male**, **mixed**), merges them, performs quality control, and produces clusters and UMAP visualisations.
 
-This repository is the Week 3 analysis, converted from an R Markdown notebook and a cleaned R script into a structured project.
 
 ## What the pipeline does
 
