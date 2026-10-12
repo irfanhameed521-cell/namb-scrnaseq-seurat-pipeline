@@ -31,7 +31,7 @@ namb-scrnaseq-seurat-pipeline/
 │   ├── 00_install_packages.R   # one-time package installation
 │   └── 01_run_pipeline.R       # full analysis as a script
 ├── notebooks/
-│   └── week3_analysis.Rmd      # same analysis as an R Markdown notebook
+│   └── analysis.Rmd      # same analysis as an R Markdown notebook
 ├── data/
 │   ├── README.md               # which input files to provide
 │   └── raw/                    # put your .h5 files here (not tracked by git)
